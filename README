@@ -1,0 +1,74 @@
+
+
+1)Copy the contents of the project to /apache-storm-0.9.3/examples/storm-starter/src/jvm/storm/starter/trident/project in the userhome.
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+P2 PART B :Implementation of TODO in RealTimeElasticSearchTopology.java code to store/index the real time tweets in Elastic Search and use various queries to storm topology to get the desired results
+
+REFERENCES:
+-Libraries twitter4j, elasticsearch,common-collections,jackson are used in the project
+
+Steps:
+1)Make sure enviornment variables $TWITTER_CONSUMER_KEY , $TWITTER_CONSUMER_SECRET ,$TWITTER_ACCESS_TOKEN ,$TWITTER_ACCESS_SECRET are set to be used for getting
+ real time twitter stream for a user
+
+2) Run the Elastic Search Server on the machine
+	cd $HOME/elasticsearch-1.4.2
+	./bin/elasticsearh 
+
+3)compile amd pacakge the code from  /apache-storm-0.9.3/examples/storm-starter folder with the below command,
+	mvn package
+
+4)Run the apache storm with below command. The twitter stream filter  keywords are specified as arguments after TWITTER realted keys. In the below example we filter for keyword 'man' and 'apple'
+	storm jar target/storm-starter-0.9.3-jar-with-dependencies.jar storm.starter.trident.project.RealTimeElasticSearchTopology $TWITTER_CONSUMER_KEY $TWITTER_CONSUMER_SECRET $TWITTER_ACCESS_TOKEN $TWITTER_ACCESS_SECRET man apple > output.txt &
+
+
+5)view the results using,
+	cat output.txt | grep "DRPC RESULT"
+
+	Intepretation of results:
+	These are the queries run on the ES by storm toplogy 5 times at an interval of 4 seconds
+	-Termquery on 'man' keyword
+	-Termquery on 'apple' keyword
+	-MultiMatchQuery on 'apple' keyword
+	-BoolQuery on must for 'apple' keyword and mustNot for 'iphone'
+	-BoolQuery on must for 'apple' keyword and must for 'iphone'
+	-FuzzyQuery on keyword 'applic' with prefix length of 1 and boost of 1
+	-MatchAllQuery
+	-PrefixQuery for keyword 'app' keyword with boost of 2
+	-WildcardQuery for regular expression 'a??l*'
+	-BoostingQuery for postive:'apple' and negative:'iphone' with ngative boost as 0.2
+	-For more information on each query please visit:http://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-queries.html
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+P2 PART B :Computing Top-K using Count-Min and Bloom Filters .Project implements Top-K tracking for keywords in  real-time text stream, while ignoring "stop-words" using a Bloom Filter. In this project K is set as 5. Hence top-5 words are displayed
+
+REFERENCES:
+-Libraries twitter4j, elasticsearch,common-collections,jackson are used in the project.
+-Stop words are used from https://code.google.com/p/stop-words/ .Stop words are present in data/stop-words_english.txt in the text format
+-Bloomfilters are used from the google collections library
+
+Steps:
+1)Make sure enviornment variables $TWITTER_CONSUMER_KEY , $TWITTER_CONSUMER_SECRET ,$TWITTER_ACCESS_TOKEN ,$TWITTER_ACCESS_SECRET are set to be used for getting
+ real time twitter stream for a user
+
+2) copy the stop-words_english.txt file from submission folder(bkakaran_project2) to "$HOME/apache-storm-0.9.3/examples/storm-starter/data" folder
+	cp stop-words_english.txt $HOME/apache-storm-0.9.3/examples/storm-starter/data
+
+3) compile amd pacakge the code from  /apache-storm-0.9.3/examples/storm-starter folder with the below command,
+	mvn package
+
+4) Run the apache storm with below command. The twitter stream filter  keywords are specified as arguments after TWITTER realted keys. In the below example we filter for keyword 'love' ,'hate','happy', 'sad' , 'excited' , 'the'
+
+	storm jar target/storm-starter-0.9.3-jar-with-dependencies.jar storm.starter.trident.project.countmin.TopKCountMinSketchTopology $TWITTER_CONSUMER_KEY $TWITTER_CONSUMER_SECRET $TWITTER_ACCESS_TOKEN $TWITTER_ACCESS_SECRET love hate happy sad excited the>  output.txt &
+
+5) view the results using,
+	cat output.txt | grep "DRPC RESULT"
+
+	Intepretation of results:
+	-Top 5 words are shown in a single line with the count of number of occurences of it so far from the twitter stream.
+		eg:DRPC RESULT:[["love:2293|thanks:671|@laclippers:582|happy:729|game:762|"]]
+	-Note that may not be ordered since iterating over a priority queue does not ensure order.
+	-Top 5 words are queried at an interval of 5 seconds 100 times.
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
